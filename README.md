@@ -1,0 +1,2 @@
+# minstances
+list mastodon instances
