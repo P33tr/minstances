@@ -1,3 +1,4 @@
+using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using minstances.Models;
 using minstances.Services;
@@ -8,9 +9,11 @@ namespace minstances.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IInstancesService _instancesService;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IInstancesService instancesService, ILogger<HomeController> logger)
         {
+            _instancesService = instancesService;
             _logger = logger;
         }
 
@@ -21,7 +24,25 @@ namespace minstances.Controllers
             return View();
         }
 
-        public IActionResult Privacy()
+        [HttpGet]
+        public async Task<IActionResult> InstancesAsync()
+        {
+            InstancesVm instances = new InstancesVm();
+
+            ErrorOr<InstX> result = await _instancesService.GetAsync();
+            if (result.IsError)
+            {
+                instances.Error = result.Errors[0].Code;
+            }
+            else
+            {
+                instances.Instances = result.Value;
+            }
+
+            return View("instances", instances);
+        }
+
+            public IActionResult Privacy()
         {
             return View();
         }

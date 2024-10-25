@@ -1,3 +1,5 @@
+using minstances.Services;
+
 namespace minstances
 {
     public class Program
@@ -10,6 +12,8 @@ namespace minstances
             builder.Services.AddControllersWithViews();
 
             builder.Services.AddHttpClient();
+
+            builder.Services.AddScoped<IInstancesService, InstancesService>();
 
             var app = builder.Build();
 

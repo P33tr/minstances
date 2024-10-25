@@ -18,7 +18,7 @@ public class Instance
     public bool ipv6 { get; set; }
     public int? https_score { get; set; }
     public string https_rank { get; set; }
-    public int obs_score { get; set; }
+    public int? obs_score { get; set; }
     public string obs_rank { get; set; }
     public string users { get; set; }
     public string statuses { get; set; }

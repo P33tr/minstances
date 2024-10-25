@@ -1,18 +1,18 @@
 ﻿using ErrorOr;
-using Microsoft.AspNetCore.DataProtection;
-using minstances.Models;
-using System;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace minstances.Services
 {
-//    Get an API token
-//Application name: minstances
-//Application ID: 141087153
-//Secret token: WBKOudZsI7lYH36cpYOQRTHjeCwtcv1SPjQBW6eKmjxbdaJIfT3ns6yuLhaQzrJzHzj6qP3WC4ctWv3iFa8RWPFLtR4mbhNTbNqAJdUaOvtiFJb5kHQpfVZuhRXCZIWm
-    public class InstancesService
+    public interface IInstancesService
+    {
+        Task<ErrorOr<InstX>> GetAsync();
+    }
+    //    Get an API token
+    //Application name: minstances
+    //Application ID: 141087153
+    //Secret token: WBKOudZsI7lYH36cpYOQRTHjeCwtcv1SPjQBW6eKmjxbdaJIfT3ns6yuLhaQzrJzHzj6qP3WC4ctWv3iFa8RWPFLtR4mbhNTbNqAJdUaOvtiFJb5kHQpfVZuhRXCZIWm
+    public class InstancesService: IInstancesService
     {
         public InstancesService() { }
 
