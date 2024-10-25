@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using minstances.Models;
+using minstances.Services;
 using System.Diagnostics;
 
 namespace minstances.Controllers
@@ -13,8 +14,10 @@ namespace minstances.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> IndexAsync()
         {
+            InstancesService instancesService = new InstancesService();
+            await instancesService.GetAsync();
             return View();
         }
 
