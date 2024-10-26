@@ -1,11 +1,30 @@
 ﻿@model InstancesVm
 @{
-
 }
-<h2>Instances</h2>
+<span><h2>Instances</h2>
+@Html.ActionLink("Refresh", "Instances", "Home", new { }, new { @class = "btn btn-primary" })
+</span>
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Users</th>
+        <th>Up</th>
+        <th>Admin</th>
+        <th>Email</th>
+    </tr>
+    </thead>
 
-@foreach(var instance in Model.Instances.instances)
-{
-<p>@instance.name</p>
 
-}
+    @foreach (var instance in Model.Instances.instances)
+    {
+        <tr>
+            <td>@instance.name</td>
+            <td>@instance.users</td>
+            <td>@instance.up</td>
+            <td>@instance.admin</td>
+            <td>@instance.email</td>
+        </tr>
+    }
+
+</table>

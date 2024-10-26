@@ -8,9 +8,9 @@ public class Instance
 {
     public string id { get; set; }
     public string name { get; set; }
-    public DateTime added_at { get; set; }
-    public DateTime updated_at { get; set; }
-    public DateTime checked_at { get; set; }
+    public DateTime? added_at { get; set; }
+    public DateTime? updated_at { get; set; }
+    public DateTime? checked_at { get; set; }
     public int uptime { get; set; }
     public bool up { get; set; }
     public bool dead { get; set; }
