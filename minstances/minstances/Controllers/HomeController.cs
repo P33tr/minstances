@@ -10,10 +10,14 @@ namespace minstances.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IInstancesService _instancesService;
+        private readonly IMastodonService _mastodonService;
 
-        public HomeController(IInstancesService instancesService, ILogger<HomeController> logger)
+        public HomeController(IInstancesService instancesService, 
+            IMastodonService mastodonService,
+            ILogger<HomeController> logger)
         {
             _instancesService = instancesService;
+            _mastodonService = mastodonService;
             _logger = logger;
         }
 
@@ -40,6 +44,23 @@ namespace minstances.Controllers
             }
 
             return View("instances", instances);
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> PostsAsync(string instance)
+        {
+            StatusVm statuses = new StatusVm();
+            ErrorOr<Models.StatusX> result = await _mastodonService.GetStatusesAsync(instance);
+            if (result.IsError)
+            {
+                statuses.Error = result.Errors[0].Code;
+            }
+            else
+            {
+                statuses.Statuses = result.Value;
+            }
+
+            return View("Statuses", statuses);
         }
 
             public IActionResult Privacy()

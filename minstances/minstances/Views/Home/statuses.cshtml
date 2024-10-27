@@ -1,0 +1,18 @@
+﻿@model StatusVm
+@{
+}
+<h2>Statuses</h2>
+
+
+
+    @foreach (var status in Model.Statuses.statuses)
+    {
+        <p>
+            <span>@status.account.display_name</span>
+            <br/>
+            <div>
+                @status.content
+            </div>
+            
+        </p>
+    }

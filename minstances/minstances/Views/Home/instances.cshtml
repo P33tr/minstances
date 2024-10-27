@@ -24,6 +24,8 @@
             <td>@instance.up</td>
             <td>@instance.admin</td>
             <td>@instance.email</td>
+            <td><a asp-controller="Home", asp-action="Posts", asp-route-instance="@instance.name">Posts</a>
+            </td>
         </tr>
     }
 

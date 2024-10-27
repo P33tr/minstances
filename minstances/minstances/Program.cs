@@ -14,6 +14,7 @@ namespace minstances
             builder.Services.AddHttpClient();
 
             builder.Services.AddScoped<IInstancesService, InstancesService>();
+            builder.Services.AddScoped<IMastodonService, MastodonService>();
 
             var app = builder.Build();
 
