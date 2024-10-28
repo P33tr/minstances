@@ -4,8 +4,8 @@
 <h2>Statuses</h2>
 
 
-
-    @foreach (var status in Model.Statuses.statuses)
+<h3>Status count is @Model.Statuses.Length</h3>
+    @foreach (var status in Model.Statuses?? new Status[0])
     {
         <p>
             <span>@status.account.display_name</span>

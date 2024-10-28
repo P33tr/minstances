@@ -50,14 +50,16 @@ namespace minstances.Controllers
         public async Task<IActionResult> PostsAsync(string instance)
         {
             StatusVm statuses = new StatusVm();
-            ErrorOr<Models.StatusX> result = await _mastodonService.GetStatusesAsync(instance);
+            List<Models.Status> resultOfCall = new List<Models.Status>();
+            ErrorOr<List<Models.Status>> result = await _mastodonService.GetStatusesAsync(instance);
             if (result.IsError)
             {
                 statuses.Error = result.Errors[0].Code;
             }
             else
             {
-                statuses.Statuses = result.Value;
+                resultOfCall = result.Value;
+                statuses.Statuses = resultOfCall.ToArray();
             }
 
             return View("Statuses", statuses);

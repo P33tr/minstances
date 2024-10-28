@@ -4,6 +4,6 @@
     {
         public string Error { get; set; }
 
-        public StatusX Statuses { get; set; }
+        public Status[] Statuses { get; set; }
     }
 }

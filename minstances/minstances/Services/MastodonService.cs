@@ -7,7 +7,7 @@ namespace minstances.Services
 {
     public interface IMastodonService
     {
-        Task<ErrorOr<Models.StatusX>> GetStatusesAsync(string instance);
+        Task<ErrorOr<List<Models.Status>>> GetStatusesAsync(string instance);
     }
 //    Get an API token
 //Application name: minstances
@@ -17,7 +17,7 @@ namespace minstances.Services
     {
         public MastodonService() { }
 
-        public async Task<ErrorOr<Models.StatusX>> GetStatusesAsync(string instance)
+        public async Task<ErrorOr<List<Models.Status>>> GetStatusesAsync(string instance)
         {
             HttpClient client = new();
 
@@ -27,7 +27,7 @@ namespace minstances.Services
             if (response.IsSuccessStatusCode)
             {
                 string responseData = await response.Content.ReadAsStringAsync();
-                Models.StatusX results = JsonSerializer.Deserialize<Models.StatusX>(responseData);
+                List<Models.Status> results = JsonSerializer.Deserialize<List<Models.Status>>(responseData);
                 return results;
             }
             else
