@@ -7,12 +7,16 @@
 <h3>Status count is @Model.Statuses.Length</h3>
     @foreach (var status in Model.Statuses?? new Status[0])
     {
+        <div class="status-box">
+
         <p>
             <span>@status.account.display_name</span>
             <br/>
             <div>
-                @status.content
+                @Html.Raw(status.content)
             </div>
             
         </p>
-    }
+        
+        </div>
+        }

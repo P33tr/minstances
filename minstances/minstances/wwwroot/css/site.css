@@ -20,3 +20,27 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+
+.status-box {
+  width: 50%;
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+.status-box span {
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.status-box div {
+  div {
+    margin-top: 10px;
+  }
+}
+        
