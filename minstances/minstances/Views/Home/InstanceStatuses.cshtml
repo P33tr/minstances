@@ -1,0 +1,26 @@
+﻿@model InstanceStatusVm
+@{
+}
+<h2>Statuses</h2>
+
+
+<h3>Status count is @Model.InstanceStatuses.Count</h3>
+@foreach (var instance in Model.InstanceStatuses)
+{
+    <h3>@instance.Name</h3>
+    @foreach (var status in instance.Statuses ?? new Status[0])
+    {
+        <div class="status-box">
+
+            <p>
+                <span>@status.account.display_name</span>
+                <br/>
+                <div>
+                    @Html.Raw(status.content)
+                </div>
+
+            </p>
+
+        </div>
+    }
+}

@@ -4,11 +4,12 @@
 <span><h2>Instances</h2>
 @Html.ActionLink("Refresh", "Instances", "Home", new { }, new { @class = "btn btn-primary" })
 </span>
-<table>
+<table class="styled-table">
     <thead>
     <tr>
         <th>Name</th>
         <th>Users</th>
+        <th>Active Users</th>
         <th>Up</th>
         <th>Admin</th>
         <th>Email</th>
@@ -21,6 +22,7 @@
         <tr>
             <td>@instance.name</td>
             <td>@instance.users</td>
+            <td>@instance.active_users</td>
             <td>@instance.up</td>
             <td>@instance.admin</td>
             <td>@instance.email</td>

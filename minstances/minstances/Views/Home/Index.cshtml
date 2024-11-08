@@ -7,5 +7,17 @@
 
     <p>We will use the api  <a href=" https://instances.social/api/doc/#api-_">here</a></p>
 
-   @Html.ActionLink("Random Sample Of Instances", "Instances", "Home", new { }, new { @class = "btn btn-primary" })
+    @Html.ActionLink("Random Sample Of Instances", "Instances", "Home", new { }, new { @class = "btn btn-primary" })
+</div>
+<div>
+    
+    @Html.ActionLink("List Instances by active users", "ListInstances", "Home", new { }, new { @class = "btn btn-primary" })
+
+</div>
+
+<div class="searchForm">
+    <form id="searchForm" method="get" action="@Url.Action("SearchInstances", "Home")">
+        <input type="text" name="searchTerm" placeholder="Enter search term" class="form-control" />
+        <button type="submit" class="btn btn-primary">Search across most active Instances users</button>
+    </form>
 </div>
