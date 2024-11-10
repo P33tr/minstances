@@ -5,6 +5,8 @@ using minstances.Services;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.SignalR;
+using minstances.Hubs;
 
 namespace minstances.Controllers
 {
@@ -13,11 +15,14 @@ namespace minstances.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly IInstancesService _instancesService;
         private readonly IMastodonService _mastodonService;
+        
+        private readonly IHubContext<StatusHub> _hub;
 
-        public HomeController(IInstancesService instancesService, 
+        public HomeController(IHubContext<StatusHub> hub,IInstancesService instancesService, 
             IMastodonService mastodonService,
             ILogger<HomeController> logger)
         {
+            _hub = hub;
             _instancesService = instancesService;
             _mastodonService = mastodonService;
             _logger = logger;
@@ -30,6 +35,17 @@ namespace minstances.Controllers
             return View();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Signal()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+
+                _hub.Clients.All.SendAsync("ReceiveMessage", "dinky do");
+            }
+
+            return View();
+        }
         [HttpGet]
         public async Task<IActionResult> InstancesAsync()
         {
@@ -96,12 +112,24 @@ namespace minstances.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
-        
-        public  async Task<IActionResult> SearchInstances(string searchTerm)
+
+        public async Task<IActionResult> SearchInstances(string searchTerm)
         {
-            InstanceStatusVm instanceStatusVm = new InstanceStatusVm();
-            
-            // get the list of instances with the most active users
+            try
+            {
+                InstanceStatusVm instanceStatusVm = new InstanceStatusVm();
+                return View("InstanceStatuses", instanceStatusVm);
+            }
+            finally
+            {
+                Response.OnCompleted(async () => { await DoProcessing(searchTerm); });
+            }
+        }
+
+        private async Task DoProcessing(string searchTerm)
+        {
+
+        // get the list of instances with the most active users
             InstancesVm instances = new InstancesVm();
 
             ErrorOr<InstX> result = await _instancesService.ListAsync("active_users", "desc");
@@ -121,16 +149,16 @@ namespace minstances.Controllers
                 {
                     instanceTaskList.Add(Task.Run(() =>_mastodonService.SearchAsync(instance.name, searchTerm)));
                 }
-
-                while (instanceTaskList.Count > 0)
+                InstanceStatusVm instanceStatusVm = new InstanceStatusVm();
+                while (instanceTaskList.Any())
                 {
                     var completedTask = await Task.WhenAny(instanceTaskList);
                     instanceTaskList.Remove(completedTask);
                     ErrorOr<List<Models.Status>> result2 = await completedTask;
-                    HandleResult(instanceStatusVm, result2);
+                    Task.Run(() => HandleResult(instanceStatusVm, result2));
                 }
             }
-            return View("InstanceStatuses", instanceStatusVm);
+
         }
 
         private void HandleResult(InstanceStatusVm vm,  ErrorOr<List<Status>> result2)
@@ -145,7 +173,8 @@ namespace minstances.Controllers
             {
                 resultOfCall = result2.Value;
                 instanceStatus.Statuses = resultOfCall.ToArray();
-                vm.InstanceStatuses.Add(instanceStatus);
+                //vm.InstanceStatuses.Add(instanceStatus);
+                _hub.Clients.All.SendAsync("ReceiveMessage", instanceStatus);
             }
         }
     }

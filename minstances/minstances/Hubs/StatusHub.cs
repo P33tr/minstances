@@ -4,7 +4,7 @@ namespace minstances.Hubs;
 
 public class StatusHub : Hub
 {
-    public async Task Send(string message)
+    public async Task SendAsync(string message)
     {
         await Clients.All.SendAsync("ReceiveMessage", message);
     }
