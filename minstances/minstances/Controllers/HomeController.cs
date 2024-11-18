@@ -165,11 +165,12 @@ public class HomeController : Controller
         }
         finally
         {
-            Response.OnCompleted(async () => { await DoProcessing(searchTerm); });
+            List<string> contentStart = new List<string>();
+            Response.OnCompleted(async () => { await DoProcessing(searchTerm, contentStart); });
         }
     }
 
-    private async Task DoProcessing(string searchTerm)
+    private async Task DoProcessing(string searchTerm, List<string> contentStart)
     {
 
         // get the list of instances with the most active users
@@ -198,13 +199,13 @@ public class HomeController : Controller
                 var completedTask = await Task.WhenAny(instanceTaskList);
                 instanceTaskList.Remove(completedTask);
                 ErrorOr<List<Models.Status>> result2 = await completedTask;
-                Task.Run(() => HandleResult(instanceStatusVm, result2));
+                Task.Run(() => HandleResult(instanceStatusVm, result2, contentStart));
             }
         }
 
     }
 
-    private async void HandleResult(InstanceStatusVm vm,  ErrorOr<List<Status>> result2)
+    private async void HandleResult(InstanceStatusVm vm,  ErrorOr<List<Status>> result2, List<string> contentStart)
     {
         InstanceStatuss instanceStatus = new InstanceStatuss();
         List<Models.Status> resultOfCall = new List<Models.Status>();
@@ -222,8 +223,17 @@ public class HomeController : Controller
 
             foreach (var s in instanceStatus.Statuses)
             {
-                            var messageHtml = RenderMessageHtml(s);
-                            await BroadcastMessageAsync(messageHtml);
+                if (contentStart.Contains(s.content.Substring(0, 10)))
+                {
+                    continue;
+                }
+                else
+                {
+                    contentStart.Add(s.content.Substring(0, 10));
+                    var messageHtml = RenderMessageHtml(s);
+                    await BroadcastMessageAsync(messageHtml);
+
+                }
             }
 
         }
