@@ -1,7 +1,7 @@
 ﻿"use strict";
 
 var connection = new signalR.HubConnectionBuilder().withUrl("/statusHub").build();
-
+connection.start();
 connection.on("ReceiveMessage", function ( message) {
     var li = document.createElement("li");
     document.getElementById("messagesList").appendChild(li);

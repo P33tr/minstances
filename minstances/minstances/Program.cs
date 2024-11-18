@@ -1,4 +1,3 @@
-using minstances.Hubs;
 using minstances.Services;
 
 namespace minstances
@@ -16,9 +15,6 @@ namespace minstances
 
             builder.Services.AddScoped<IInstancesService, InstancesService>();
             builder.Services.AddScoped<IMastodonService, MastodonService>();
-
-            // adding signal r 
-            builder.Services.AddSignalR();
 
             var app = builder.Build();
 
@@ -40,10 +36,6 @@ namespace minstances
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
-
-            // map the route for the signalr endpoint
-            app.UseEndpoints(endpoints => { endpoints.MapHub<StatusHub>("/statusHub"); }
-            );
             app.Run();
         }
     }

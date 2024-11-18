@@ -10,4 +10,9 @@
     <PackageReference Include="ErrorOr" Version="2.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\js\signalr\dist\browser\signalr.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\signalr\dist\browser\signalr.min.js" />
+  </ItemGroup>
+
 </Project>

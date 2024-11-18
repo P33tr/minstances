@@ -3,7 +3,11 @@
 }
 <h2>Statuses</h2>
 
-
+<div hx-ext="sse" sse-connect="/sse">
+    <div id="chat-container" sse-swap="newMessage" hx-swap="beforeend">
+        <!-- Chat messages will be displayed here -->
+    </div>
+</div>
 <h3>Status count is @Model.InstanceStatuses.Count</h3>
 @foreach (var instance in Model.InstanceStatuses)
 {
