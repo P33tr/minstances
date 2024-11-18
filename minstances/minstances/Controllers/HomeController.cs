@@ -231,7 +231,7 @@ public class HomeController : Controller
     // Method to render the message as HTML
     private string RenderMessageHtml(Status status)
     {
-        return $"<div class=\"message\"><strong>{status.id}:</strong> {status.content}</div>";
+        return $"""<div class="status-box"> <p><span>{status.account.display_name}</span>                <div>{status.content}</div></p></div>""";
     }
 }
 // Helper class to represent an SSE client
