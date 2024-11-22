@@ -2,36 +2,36 @@
     ViewData["Title"] = "Home Page";
 }
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+    <h1 class="display-4">Welcome to instance search</h1>
 
-    <p>We will use the api  <a href=" https://instances.social/api/doc/#api-_">here</a></p>
+@*     <p>We will use the api  <a href=" https://instances.social/api/doc/#api-_">here</a></p>
 
-    @Html.ActionLink("Random Sample Of Instances", "Instances", "Home", new { }, new { @class = "btn btn-primary" })
+    @Html.ActionLink("Random Sample Of Instances", "Instances", "Home", new { }, new { @class = "btn btn-primary" }) *@
 </div>
-<div>
+@* <div>
 
     @Html.ActionLink("List Instances by active users", "ListInstances", "Home", new { }, new { @class = "btn btn-primary" })
 
-</div>
+</div> *@
 
-<div class="searchForm">
+@* <div class="searchForm">
     <form id="searchForm" method="get" action="@Url.Action("SearchAllInstances", "Home")">
         <input type="text" name="searchTerm" placeholder="Enter search term" class="form-control" />
         <button type="submit" class="btn btn-primary">Search All Mastodon Instances</button>
     </form>
-</div>
+</div> *@
 
 <div class="searchForm">
     <form id="searchForm" method="get" action="@Url.Action("SearchInstances", "Home")">
         <input type="text" name="searchTerm" placeholder="Enter search term" class="form-control" />
         <div class="form-group">
-            <label for="dateRange">Select Date Range</label> 
+@*             <label for="dateRange">Select Date Range</label>  *@
             <select id="dateRange" name="dateRange" class="form-control"> 
                 <option value="Today">Today</option> 
                 <option value="LastWeek">Last Week</option> 
                 <option value="LastMonth">Last Month</option> 
             </select>
-
-            <button type="submit" class="btn btn-primary">Search across most active Instances users</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Search across 500 instances ordered by most active users</button>
     </form>
 </div>
