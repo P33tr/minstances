@@ -15,10 +15,10 @@ public class HomeController : Controller
     private readonly IInstancesService _instancesService;
     private readonly IMastodonService _mastodonService;
     // A thread-safe collection to store connected clients
-        
+
     private static ConcurrentDictionary<string, SseClient> clients = new ConcurrentDictionary<string, SseClient>();
 
-    public HomeController(IInstancesService instancesService, 
+    public HomeController(IInstancesService instancesService,
         IMastodonService mastodonService,
         ILogger<HomeController> logger)
     {
@@ -26,7 +26,7 @@ public class HomeController : Controller
         _mastodonService = mastodonService;
         _logger = logger;
     }
-    
+
     // SSE endpoint method
     [HttpGet("/sse")]
     public async Task Sse()
@@ -59,12 +59,33 @@ public class HomeController : Controller
             clients.TryRemove(clientId, out _);
         }
     }
-    
+
     // Method to broadcast messages to all connected clients
     public static async Task BroadcastMessageAsync(string message)
     {
         var data = $"event: newMessage\n";
         data += $"data: {message}\n\n";
+        var bytes = Encoding.UTF8.GetBytes(data);
+
+        foreach (var client in clients.Values)
+        {
+            try
+            {
+                await client.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                await client.Response.Body.FlushAsync();
+            }
+            catch
+            {
+                // Handle exceptions (e.g., client disconnected)
+            }
+        }
+    }
+
+    // Method to send instance total count
+    public static async Task InstanceCountTotalAsync(string count)
+    {
+        var data = $"event: instanceCount\n";
+        data += $"data: {count}\n\n";
         var bytes = Encoding.UTF8.GetBytes(data);
 
         foreach (var client in clients.Values)
@@ -87,7 +108,7 @@ public class HomeController : Controller
         await instancesService.GetAsync();
         return View();
     }
-        
+
     [HttpGet]
     public async Task<IActionResult> InstancesAsync()
     {
@@ -105,7 +126,7 @@ public class HomeController : Controller
 
         return View("instances", instances);
     }
-        
+
     [HttpGet]
     public async Task<IActionResult> ListInstancesAsync()
     {
@@ -123,8 +144,8 @@ public class HomeController : Controller
 
         return View("instances", instances);
     }
-        
-        
+
+
     [HttpGet]
     public async Task<IActionResult> PostsAsync(string instance)
     {
@@ -155,7 +176,7 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-    public async Task<IActionResult> SearchInstances(string searchTerm)
+    public async Task<IActionResult> SearchInstances(string searchTerm, string dateRange)
     {
         try
         {
@@ -166,16 +187,25 @@ public class HomeController : Controller
         finally
         {
             List<string> contentStart = new List<string>();
-            Response.OnCompleted(async () => { await DoProcessing(searchTerm, contentStart); });
+            Response.OnCompleted(async () => { await DoProcessing(searchTerm, dateRange, contentStart); });
         }
     }
 
-    private async Task DoProcessing(string searchTerm, List<string> contentStart)
+    private async Task DoProcessing(string searchTerm, string dateRange, List<string> contentStart)
     {
 
         // get the list of instances with the most active users
         InstancesVm instances = new InstancesVm();
 
+        DateTime startDate; 
+        switch (dateRange)
+        {
+            case "Today": startDate = DateTime.Today; break;
+            case "LastWeek": startDate = DateTime.Today.AddDays(-7); break;
+            case "LastMonth": startDate = DateTime.Today.AddMonths(-1); break;
+            default:
+                startDate = DateTime.MinValue; break;
+        }
         ErrorOr<InstX> result = await _instancesService.ListAsync("active_users", "desc");
         if (result.IsError)
         {
@@ -186,26 +216,33 @@ public class HomeController : Controller
         {
             instances.Instances = result.Value;
 
+
             // here is an array of tasks we want to perform
             var instanceTaskList = new List<Task<ErrorOr<List<Models.Status>>>>();
-                
+
             foreach (var instance in instances.Instances.instances)
             {
-                instanceTaskList.Add(Task.Run(() =>_mastodonService.SearchAsync(instance.name, searchTerm)));
+                instanceTaskList.Add(Task.Run(() => _mastodonService.SearchAsync(instance.name, searchTerm)));
             }
+
+            // broadcast the instance count.
+            int totalInstances = instanceTaskList.Count();
+            await InstanceCountTotalAsync($"Instance Count {totalInstances}/{instanceTaskList.Count().ToString()}");
+
             InstanceStatusVm instanceStatusVm = new InstanceStatusVm();
             while (instanceTaskList.Any())
             {
                 var completedTask = await Task.WhenAny(instanceTaskList);
                 instanceTaskList.Remove(completedTask);
                 ErrorOr<List<Models.Status>> result2 = await completedTask;
-                Task.Run(() => HandleResult(instanceStatusVm, result2, contentStart));
+                await InstanceCountTotalAsync($"Instance Count {totalInstances}/{instanceTaskList.Count().ToString()}");
+                Task.Run(() => HandleResult(instanceStatusVm, result2, contentStart, startDate));
             }
         }
 
     }
 
-    private async void HandleResult(InstanceStatusVm vm,  ErrorOr<List<Status>> result2, List<string> contentStart)
+    private async void HandleResult(InstanceStatusVm vm, ErrorOr<List<Status>> result2, List<string> contentStart, DateTime startDate)
     {
         InstanceStatuss instanceStatus = new InstanceStatuss();
         List<Models.Status> resultOfCall = new List<Models.Status>();
@@ -229,10 +266,12 @@ public class HomeController : Controller
                 }
                 else
                 {
-                    contentStart.Add(s.content.Substring(0, 10));
-                    var messageHtml = RenderMessageHtml(s);
-                    await BroadcastMessageAsync(messageHtml);
-
+                    if (s.created_at.CompareTo(startDate) == 1)
+                    {
+                        contentStart.Add(s.content.Substring(0, 10));
+                        var messageHtml = RenderMessageHtml(s);
+                        await BroadcastMessageAsync(messageHtml);
+                    }
                 }
             }
 
@@ -241,7 +280,18 @@ public class HomeController : Controller
     // Method to render the message as HTML
     private string RenderMessageHtml(Status status)
     {
-        return $"""<div class="status-box"> <p><span>{status.account.display_name}</span>                <div>{status.content}</div></p></div>""";
+        if (status.content.Contains("img"))
+        {
+            //there is an image
+            Console.WriteLine(status.content);
+        }
+        StringBuilder statusDisplayBuilder = new("<div class=\"status-box\">");
+        statusDisplayBuilder.Append($"<img class=\"avatar\" src=\"{status.account.avatar}\" width=\"40\" height=\"40\"/>");
+        statusDisplayBuilder.Append($"<p><span> {status.account.display_name} </span> ");
+        statusDisplayBuilder.Append($" <div>Created: {status.created_at}</div>");
+        statusDisplayBuilder.Append($" <div>{status.content}</div>");
+        statusDisplayBuilder.Append(" </p></div>");
+        return statusDisplayBuilder.ToString();
     }
 }
 // Helper class to represent an SSE client

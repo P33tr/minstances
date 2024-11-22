@@ -43,7 +43,7 @@ namespace minstances.Services
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "WBKOudZsI7lYH36cpYOQRTHjeCwtcv1SPjQBW6eKmjxbdaJIfT3ns6yuLhaQzrJzHzj6qP3WC4ctWv3iFa8RWPFLtR4mbhNTbNqAJdUaOvtiFJb5kHQpfVZuhRXCZIWm");
 
             
-            using HttpResponseMessage response = await client.GetAsync($"https://instances.social/api/1.0/instances/list?sort_by={sort_by}&sort_order={sort_order}");
+            using HttpResponseMessage response = await client.GetAsync($"https://instances.social/api/1.0/instances/list?sort_by={sort_by}&sort_order={sort_order}&count=500");
             if (response.IsSuccessStatusCode)
             {
                 string responseData = await response.Content.ReadAsStringAsync();
