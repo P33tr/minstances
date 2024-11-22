@@ -9,7 +9,7 @@
     @Html.ActionLink("Random Sample Of Instances", "Instances", "Home", new { }, new { @class = "btn btn-primary" })
 </div>
 <div>
-    
+
     @Html.ActionLink("List Instances by active users", "ListInstances", "Home", new { }, new { @class = "btn btn-primary" })
 
 </div>
@@ -24,6 +24,14 @@
 <div class="searchForm">
     <form id="searchForm" method="get" action="@Url.Action("SearchInstances", "Home")">
         <input type="text" name="searchTerm" placeholder="Enter search term" class="form-control" />
-        <button type="submit" class="btn btn-primary">Search across most active Instances users</button>
+        <div class="form-group">
+            <label for="dateRange">Select Date Range</label> 
+            <select id="dateRange" name="dateRange" class="form-control"> 
+                <option value="Today">Today</option> 
+                <option value="LastWeek">Last Week</option> 
+                <option value="LastMonth">Last Month</option> 
+            </select>
+
+            <button type="submit" class="btn btn-primary">Search across most active Instances users</button>
     </form>
 </div>
