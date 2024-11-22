@@ -81,6 +81,27 @@ public class HomeController : Controller
         }
     }
 
+    // Method to send instance total count
+    public static async Task InstanceCountTotalAsync(string count)
+    {
+        var data = $"event: instanceCount\n";
+        data += $"data: {count}\n\n";
+        var bytes = Encoding.UTF8.GetBytes(data);
+
+        foreach (var client in clients.Values)
+        {
+            try
+            {
+                await client.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                await client.Response.Body.FlushAsync();
+            }
+            catch
+            {
+                // Handle exceptions (e.g., client disconnected)
+            }
+        }
+    }
+
     public async Task<IActionResult> IndexAsync()
     {
         InstancesService instancesService = new InstancesService();
@@ -186,6 +207,7 @@ public class HomeController : Controller
         {
             instances.Instances = result.Value;
 
+
             // here is an array of tasks we want to perform
             var instanceTaskList = new List<Task<ErrorOr<List<Models.Status>>>>();
                 
@@ -193,12 +215,18 @@ public class HomeController : Controller
             {
                 instanceTaskList.Add(Task.Run(() =>_mastodonService.SearchAsync(instance.name, searchTerm)));
             }
+
+            // broadcast the instance count.
+            int totalInstances = instanceTaskList.Count();
+            await InstanceCountTotalAsync($"Instance Count {totalInstances}/{instanceTaskList.Count().ToString()}");
+
             InstanceStatusVm instanceStatusVm = new InstanceStatusVm();
             while (instanceTaskList.Any())
             {
                 var completedTask = await Task.WhenAny(instanceTaskList);
                 instanceTaskList.Remove(completedTask);
                 ErrorOr<List<Models.Status>> result2 = await completedTask;
+                await InstanceCountTotalAsync($"Instance Count {totalInstances}/{instanceTaskList.Count().ToString()}");
                 Task.Run(() => HandleResult(instanceStatusVm, result2, contentStart));
             }
         }
@@ -241,7 +269,18 @@ public class HomeController : Controller
     // Method to render the message as HTML
     private string RenderMessageHtml(Status status)
     {
-        return $"""<div class="status-box"> <p><span>{status.account.display_name}</span>                <div>{status.content}</div></p></div>""";
+        if(status.content.Contains("img"))
+        {
+            //there is an image
+            Console.WriteLine(status.content);
+        }
+        StringBuilder statusDisplayBuilder = new("<div class=\"status-box\">" );
+        statusDisplayBuilder.Append($"<img class=\"avatar\" src=\"{status.account.avatar}\" width=\"40\" height=\"40\"/>");
+        statusDisplayBuilder.Append($"<p><span> { status.account.display_name } </span> ");
+        statusDisplayBuilder.Append($" <div>Created: {status.created_at}</div>");
+        statusDisplayBuilder.Append($" <div>{status.content}</div>");
+        statusDisplayBuilder.Append(" </p></div>");
+        return statusDisplayBuilder.ToString();
     }
 }
 // Helper class to represent an SSE client

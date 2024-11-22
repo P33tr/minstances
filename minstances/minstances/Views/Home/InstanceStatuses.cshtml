@@ -4,6 +4,9 @@
 <h2>Statuses</h2>
 
 <div hx-ext="sse" sse-connect="/sse">
+    <div id="instance-count" sse-swap="instanceCount" hx-swap="textContent">
+        <!-- Instance Count will be displayed here -->Count
+    </div>
     <div id="chat-container" sse-swap="newMessage" hx-swap="beforeend">
         <!-- Chat messages will be displayed here -->
     </div>
