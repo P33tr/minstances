@@ -5,6 +5,7 @@ using minstances.Models;
 using minstances.Services;
 using System.Diagnostics;
 using System.Text;
+using minstances.Data;
 
 
 namespace minstances.Controllers;
@@ -12,16 +13,20 @@ namespace minstances.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly IMinstancesRepository _minstancesRepository;
     private readonly IInstancesService _instancesService;
     private readonly IMastodonService _mastodonService;
     // A thread-safe collection to store connected clients
 
     private static ConcurrentDictionary<string, SseClient> clients = new ConcurrentDictionary<string, SseClient>();
 
-    public HomeController(IInstancesService instancesService,
+    public HomeController(
+        IMinstancesRepository minstancesRepository,
+        IInstancesService instancesService,
         IMastodonService mastodonService,
         ILogger<HomeController> logger)
     {
+        _minstancesRepository = minstancesRepository;
         _instancesService = instancesService;
         _mastodonService = mastodonService;
         _logger = logger;
@@ -180,6 +185,10 @@ public class HomeController : Controller
     {
         try
         {
+            // record the search in the db
+            _ = await _minstancesRepository.CreateSearch(searchTerm);
+            // I dont care about the result for now;
+
             InstanceStatusVm instanceStatusVm = new InstanceStatusVm();
             return View("InstanceStatuses", instanceStatusVm);
 

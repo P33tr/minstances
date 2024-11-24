@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using minstances.Data;
 using minstances.Services;
 
 namespace minstances
@@ -15,6 +18,14 @@ namespace minstances
 
             builder.Services.AddScoped<IInstancesService, InstancesService>();
             builder.Services.AddScoped<IMastodonService, MastodonService>();
+
+            //Configure the ConnectionString and DbContext class
+            var connectionString = @"Data Source=C:\minstances_data\minstances.db";
+            builder.Services.AddDbContext<MinstancesContext>(options =>
+            {
+                options.UseSqlite(connectionString);
+            });
+            builder.Services.AddScoped<IMinstancesRepository, MinstancesRepository>();
 
             var app = builder.Build();
 
