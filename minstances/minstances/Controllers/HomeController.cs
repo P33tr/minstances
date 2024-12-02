@@ -6,6 +6,9 @@ using minstances.Services;
 using System.Diagnostics;
 using System.Text;
 using minstances.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Linq.Expressions;
+using HtmlAgilityPack;
 
 
 namespace minstances.Controllers;
@@ -70,6 +73,29 @@ public class HomeController : Controller
     {
         var data = $"event: newMessage\n";
         data += $"data: {message}\n\n";
+        var bytes = Encoding.UTF8.GetBytes(data);
+
+        foreach (var client in clients.Values)
+        {
+            try
+            {
+                await client.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                await client.Response.Body.FlushAsync();
+            }
+            catch
+            {
+                // Handle exceptions (e.g., client disconnected)
+            }
+        }
+    }
+
+    public static async Task BroadcastTagAsync(string tag)
+    {
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.Append($"<li><a href='#'>{tag}</a></li>");
+        var data = $"event: newTag\n";
+        data += $"data: {stringBuilder.ToString()}\n\n";
         var bytes = Encoding.UTF8.GetBytes(data);
 
         foreach (var client in clients.Values)
@@ -278,8 +304,12 @@ public class HomeController : Controller
                     if (s.created_at.CompareTo(startDate) == 1)
                     {
                         contentStart.Add(s.content.Substring(0, 10));
-                        var messageHtml = RenderMessageHtml(s);
-                        await BroadcastMessageAsync(messageHtml);
+                        Tuple<string, List<string>> messageHtml = RenderMessageHtml(s);
+                        await BroadcastMessageAsync(messageHtml.Item1);
+                        foreach (string aTag in messageHtml.Item2)
+                        {
+                            await BroadcastTagAsync(aTag);
+                        }
                     }
                 }
             }
@@ -287,7 +317,7 @@ public class HomeController : Controller
         }
     }
     // Method to render the message as HTML
-    private string RenderMessageHtml(Status status)
+    private Tuple<string, List<string>> RenderMessageHtml(Status status)
     {
         if (status.content.Contains("img"))
         {
@@ -295,12 +325,43 @@ public class HomeController : Controller
             Console.WriteLine(status.content);
         }
         StringBuilder statusDisplayBuilder = new("<div class=\"status-box\">");
-        statusDisplayBuilder.Append($"<img class=\"avatar\" src=\"{status.account.avatar}\" width=\"40\" height=\"40\"/>");
-        statusDisplayBuilder.Append($"<p><span> {status.account.display_name} </span> ");
+        statusDisplayBuilder.Append($"<p><img class=\"avatar\" src=\"{status.account.avatar}\" width=\"40\" height=\"40\"/>");
+        statusDisplayBuilder.Append($"<span> {status.account.display_name} </span> ");
         statusDisplayBuilder.Append($" <div>Created: {status.created_at}</div>");
+
+        // the content is hrml so lets parse it and get the hashtags
+        var contentDocument = new HtmlAgilityPack.HtmlDocument();
+        contentDocument.LoadHtml(status.content);
+
+        //   //a[@class='mention hashtag']
+        List<string> links = new List<string>();
+        var nodes = contentDocument.DocumentNode.SelectNodes("//a[@class='mention hashtag']");
+        if (nodes != null)
+        {
+
+            foreach (HtmlNode? node in nodes)
+            {
+                links.Add(node.InnerText);
+            }
+        }
+        //var hashLinks =contentDocument.DocumentNode.Descendants("a")
+        //    .Select(y => y.Descendants()
+        //        .Where(x => x.InnerText.Contains("#")))   
+        //        .ToList();
+        //List<string> links = new List<string>();
+        //foreach (var hashLink in hashLinks)
+        //{
+        //    links.Add(hashLink.ToString());
+        //}
+
         statusDisplayBuilder.Append($" <div>{status.content}</div>");
+        foreach(var mediaItem in status.media_attachments)
+        {
+            statusDisplayBuilder.Append($"<span>{mediaItem.description}</span>");
+            statusDisplayBuilder.Append($"<img src='{mediaItem.preview_url}'/>");
+        }
         statusDisplayBuilder.Append(" </p></div>");
-        return statusDisplayBuilder.ToString();
+        return new Tuple<string, List<string>>(statusDisplayBuilder.ToString(), links);
     }
 }
 // Helper class to represent an SSE client

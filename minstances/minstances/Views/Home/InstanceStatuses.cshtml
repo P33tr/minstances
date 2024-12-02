@@ -2,18 +2,32 @@
 @{
 }
 <h2>Statuses</h2>
-
 <div hx-ext="sse" sse-connect="/sse">
-    <div id="instance-count" sse-swap="instanceCount" hx-swap="textContent">
-        <!-- Instance Count will be displayed here -->Count
-    </div>
-    <div id="chat-container" sse-swap="newMessage" hx-swap="beforeend">
-        <!-- Chat messages will be displayed here -->
+<div class="row">
+    <div class="col-md-10">
+
+            <div id="instance-count" sse-swap="instanceCount" hx-swap="textContent">
+                <!-- Instance Count will be displayed here -->Count
+            </div>
+            <div id="chat-container" sse-swap="newMessage" hx-swap="afterend">
+                <!-- Statuses messages will be displayed here -->
+            </div>
+        </div>
+
+    <div class="col-md-2 right-panel">
+        <h3>Associated Tags</h3>
+        <ul>
+        <div id="tag-container" sse-swap="newTag" hx-swap="afterend">
+            <!-- Tags  will be displayed here -->
+        </div>
+            </ul>
     </div>
 </div>
-<h3>Status count is @Model.InstanceStatuses.Count</h3>
+</div>
+@* <h3>Status count is @Model.InstanceStatuses.Count</h3>
 @foreach (var instance in Model.InstanceStatuses)
 {
+
     <h3>@instance.Name</h3>
     @foreach (var status in instance.Statuses ?? new Status[0])
     {
@@ -30,4 +44,4 @@
 
         </div>
     }
-}
+} *@
