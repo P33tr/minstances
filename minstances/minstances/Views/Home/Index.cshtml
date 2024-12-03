@@ -21,6 +21,12 @@
     </form>
 </div> *@
 
+<div>
+
+    @Html.ActionLink("Bsky Firhose", "Index", "Bsky", new { }, new { @class = "btn btn-primary" })
+
+</div>
+
 <div class="searchForm">
     <form id="searchForm" method="get" action="@Url.Action("SearchInstances", "Home")">
         <input type="text" name="searchTerm" placeholder="Enter search term" class="form-control" />
