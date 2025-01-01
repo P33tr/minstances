@@ -36,7 +36,7 @@
         public string display_name { get; set; }
         public bool locked { get; set; }
         public bool bot { get; set; }
-        public bool discoverable { get; set; }
+        public bool? discoverable { get; set; }
         public bool indexable { get; set; }
         public bool group { get; set; }
         public DateTime created_at { get; set; }
@@ -51,7 +51,7 @@
         public int following_count { get; set; }
         public int statuses_count { get; set; }
         public string last_status_at { get; set; }
-        public bool hide_collections { get; set; }
+        public bool? hide_collections { get; set; }
         public object[] emojis { get; set; }
         public Field[] fields { get; set; }
     }
