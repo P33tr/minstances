@@ -4,8 +4,6 @@
 @{
 }
 <script src="https://d3js.org/d3.v6.min.js"></script>
-<h1 hx-on="click: alert('dinky do');">Display a graph</h1>
-
 
 <div hx-ext="sse" sse-connect="/get-graph-data">
     <div class="row">
@@ -42,12 +40,17 @@
 
     const color = d3.scaleOrdinal(d3.schemePastel2);
 
-      const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.id))
-    .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2));
+    const svg = d3.select('svg') 
+        .attr('width', width) 
+        .attr('height', height) 
+        .call(d3.zoom()
+        .on('zoom', (event) => { svg.attr('transform', event.transform); })) 
+        .append('g');
 
-        const svg = d3.select('svg');
+     const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id))
+        .force("charge", d3.forceManyBody())
+        .force("center", d3.forceCenter(width / 2, height / 2));
 
     const link = svg.append("g")
         .attr("class", "links")
@@ -67,15 +70,15 @@
         .attr("r", 5)
         .attr("fill", d => color(d.group));
 
-        const label = svg.append("g")
-    .attr("class", "labels")
-    .selectAll("text")
-    .data(nodes)
-    .enter()
-    .append("text")
-    .attr("dx", 12) // Offset the text horizontally from the node
-    .attr("dy", ".35em") // Vertically align the text with the node
-    .text(d => d.id);
+    const label = svg.append("g")
+        .attr("class", "labels")
+        .selectAll("text")
+        .data(nodes)
+        .enter()
+        .append("text")
+        .attr("dx", 12) // Offset the text horizontally from the node
+        .attr("dy", ".35em") // Vertically align the text with the node
+        .text(d => d.id);
 
 
       simulation.on("tick", () => {
