@@ -73,6 +73,22 @@ public class GraphController : Controller
         }
     }
 
+    private async Task<List<Instance>> GetInstances()
+    {
+        InstancesVm instances = new InstancesVm();
+
+        ErrorOr<InstX> result = await _instancesService.ListAsync("active_users", "desc");
+        if (result.IsError)
+        {
+            throw new Exception("Failed in GetInstances.");
+        }
+        else
+        {
+            return result.Value.instances.ToList();
+        }
+        
+    }
+
     //// Method to broadcast messages to all connected clients
     public static async Task BroadcastMessageAsync(string message)
     {
@@ -140,20 +156,20 @@ public class GraphController : Controller
     public async Task<IActionResult> DoProcessing()
     {
         Thread.Sleep(1000);
+        List<Node> nodes = new List<Node>();
+
+        List<Instance> instances = await GetInstances();
 
 
         List<Link> links = new List<Link>();
-        links.Add(new Link { source = "node1", target = "node2" });
-        links.Add(new Link { source = "node4", target = "node2" });
-        links.Add(new Link { source = "node5", target = "node2" });
+        //links.Add(new Link { source = "node1", target = "node2" });
+        //links.Add(new Link { source = "node4", target = "node2" });
+        //links.Add(new Link { source = "node5", target = "node2" });
             
-        List<Node> nodes = new List<Node>();
-        nodes.Add(new Node { id = "node1", group = 1 });
-        nodes.Add(new Node { id = "node2", group = 2 });
-        nodes.Add(new Node { id = "node3", group = 1 });
-        nodes.Add(new Node { id = "node6", group = 2 });
-        nodes.Add(new Node { id = "node4", group = 1 });
-        nodes.Add(new Node { id = "node5", group = 2 });
+        foreach(var instance in instances)
+        {
+            nodes.Add(new Node { id = instance.name, group = 1 });
+        }
 
         GraphData graphData = new GraphData(nodes, links);
 
