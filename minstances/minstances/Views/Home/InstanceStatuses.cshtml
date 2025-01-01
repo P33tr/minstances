@@ -9,7 +9,7 @@
             <div id="instance-count" sse-swap="instanceCount" hx-swap="textContent">
                 <!-- Instance Count will be displayed here -->Count
             </div>
-            <div id="chat-container" sse-swap="newMessage" hx-swap="afterend">
+            <div id="chat-container" sse-swap="newMessage" hx-swap="afterend" hx-on="htmx:afterRequest: alert('after end fired');">
                 <!-- Statuses messages will be displayed here -->
             </div>
         </div>
@@ -17,7 +17,7 @@
     <div class="col-md-2 right-panel">
         <h3>Associated Tags</h3>
         <ul>
-        <div id="tag-container" sse-swap="newTag" hx-swap="afterend">
+                <div id="tag-container" sse-swap="newTag" hx-swap="afterend">
             <!-- Tags  will be displayed here -->
         </div>
             </ul>
@@ -45,3 +45,18 @@
         </div>
     }
 } *@
+<script>
+
+            htmx.on("htmx:afterSettle", function (detail) {
+                alert(detail);
+    alert(JSON.stringify(detail))
+                }
+            );
+
+</script>
+@* <script>
+    htmx.onLoad(function(content){
+        console.log("Content loaded");
+        console.log(content);
+    })
+</script> *@
