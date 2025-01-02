@@ -129,6 +129,8 @@ public class GraphController : Controller
     {
         public string id { get; set; }
         public int group { get; set; }
+
+        public string img { get; set; }
     }
     public class Link
     {
@@ -168,7 +170,7 @@ public class GraphController : Controller
             
         foreach(var instance in instances)
         {
-            nodes.Add(new Node { id = instance.name, group = 1 });
+            nodes.Add(new Node { id = instance.name, group = 1, img=instance.thumbnail });
         }
 
         GraphData graphData = new GraphData(nodes, links);

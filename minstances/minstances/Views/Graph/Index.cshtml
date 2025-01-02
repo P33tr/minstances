@@ -62,13 +62,15 @@
         .attr("stroke-width",1.5);
 
     const node = svg.append("g")
-        .attr("class", "nodes")
-        .selectAll("circle")
+        .selectAll("image")
         .data(nodes)
         .enter()
-        .append("circle")
-        .attr("r", 5)
-        .attr("fill", d => color(d.group));
+        .append("image")
+        .attr('xlink:href', d => d.img)
+        .attr('width', 50) 
+        .attr('height', 50) 
+        .attr('x', -25) 
+        .attr('y', -25)
 
     const label = svg.append("g")
         .attr("class", "labels")
@@ -89,8 +91,8 @@
           .attr("y2", d => d.target.y);
 
       node
-          .attr("cx", d => d.x)
-          .attr("cy", d => d.y);
+          .attr("x", d => d.x-20)
+          .attr("y", d => d.y-20);
 
       label 
           .attr("x", d => d.x) 
