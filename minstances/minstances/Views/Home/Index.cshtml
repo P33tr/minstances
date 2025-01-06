@@ -22,14 +22,15 @@
 </div> *@
 
 <div>
-
-    @Html.ActionLink("Bsky Firehose", "Index", "Bsky", new { }, new { @class = "btn btn-primary" })
-
+    <p>
+    @Html.ActionLink("Get 10 seconds of Bsky Firehose", "Index", "Bsky", new { }, new { @class = "btn btn-primary" })
+    </p>
 </div>
 <div>
 
     @Html.ActionLink("Graph", "Index", "graph", new { }, new { @class = "btn btn-primary" })
 
+    @Html.ActionLink("Graph Instance By Language", "Index", "InstanceLanguageGraph", new { }, new { @class = "btn btn-primary" })
 </div>
 
 <div class="searchForm">

@@ -18,7 +18,7 @@ using Google.Protobuf.Collections;
 
 namespace minstances.Controllers;
 
-public class GraphController : Controller
+public class InstanceLanguageGraphController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly IMinstancesRepository _minstancesRepository;
@@ -28,7 +28,7 @@ public class GraphController : Controller
 
     private static ConcurrentDictionary<string, SseClient> clients = new ConcurrentDictionary<string, SseClient>();
 
-    public GraphController(
+    public InstanceLanguageGraphController(
         IMinstancesRepository minstancesRepository,
         IInstancesService instancesService,
         IMastodonService mastodonService,
@@ -41,7 +41,7 @@ public class GraphController : Controller
     }
 
     //// SSE endpoint method
-    [HttpGet("/get-graph-data")]
+    [HttpGet("/get-instance-language-data")]
     public async Task Sse()
     {
         var clientId = Guid.NewGuid().ToString();
@@ -110,6 +110,26 @@ public class GraphController : Controller
         }
     }
 
+    public static async Task BroadcastNewInstanceLanguageAsync(string message)
+    {
+        var data = $"event: newInstanceLanguage\n";
+        data += $"data: {message}\n\n";
+        var bytes = Encoding.UTF8.GetBytes(data);
+
+        foreach (var client in clients.Values)
+        {
+            try
+            {
+                await client.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                await client.Response.Body.FlushAsync();
+            }
+            catch
+            {
+                // Handle exceptions (e.g., client disconnected)
+            }
+        }
+    }
+
 
     public async Task<IActionResult> IndexAsync()
     {
@@ -127,6 +147,18 @@ public class GraphController : Controller
 
     public class Node
     {
+        public Node()
+        {
+            id = "";
+            group = 0;
+            img = "";
+        }   
+        public Node(string id, int group, string imgUrl)
+        {
+            this.id = id;
+            this.group =group;
+            this.img = imgUrl;
+        }
         public string id { get; set; }
         public int group { get; set; }
 
@@ -171,6 +203,7 @@ public class GraphController : Controller
         foreach(var instance in instances)
         {
             nodes.Add(new Node { id = instance.name, group = 1, img=instance.thumbnail });
+            await AddLanguageNodeAsync(instance);
         }
 
         GraphData graphData = new GraphData(nodes, links);
@@ -182,6 +215,21 @@ public class GraphController : Controller
 
 
         return View();
+    }
+
+    private async Task AddLanguageNodeAsync(Instance instance)
+    {
+        Node language = new Node();
+        if(instance.info.languages is null || instance.info.languages.Length ==0)
+        {
+            language = new Node("No language", 1, "");
+        }
+        else
+        {
+            language = new Node(instance.info.languages[0].ToString(), 1, "");
+        }
+        string jsonString = JsonSerializer.Serialize(language);
+        await BroadcastNewInstanceLanguageAsync(jsonString);
     }
 
     //async Task HandleMessageAsync(SubscribeRepoMessage message)
