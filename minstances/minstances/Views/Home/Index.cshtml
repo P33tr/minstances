@@ -20,7 +20,11 @@
         <button type="submit" class="btn btn-primary">Search All Mastodon Instances</button>
     </form>
 </div> *@
-
+<div>
+    <p>
+        @Html.ActionLink("Refeactored Bsky Firehose", "Index", "BskyEvent", new { }, new { @class = "btn btn-primary" })
+    </p>
+</div>
 <div>
     <p>
     @Html.ActionLink("Get 10 seconds of Bsky Firehose", "Index", "Bsky", new { }, new { @class = "btn btn-primary" })
