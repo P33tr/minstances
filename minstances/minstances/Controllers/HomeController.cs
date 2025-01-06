@@ -6,8 +6,6 @@ using minstances.Services;
 using System.Diagnostics;
 using System.Text;
 using minstances.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Linq.Expressions;
 using HtmlAgilityPack;
 
 
@@ -135,8 +133,8 @@ namespace minstances.Controllers
 
         public async Task<IActionResult> IndexAsync()
         {
-            InstancesService instancesService = new InstancesService();
-            await instancesService.GetAsync();
+            //InstancesService instancesService = new InstancesService();
+            //await instancesService.GetAsync();
             return View();
         }
 

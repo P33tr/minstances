@@ -1,0 +1,221 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<script src="https://d3js.org/d3.v6.min.js"></script>
+
+<div hx-ext="sse" sse-connect="/get-instance-language-data">
+    <div class="row">
+        <div class="col-md-10">
+            <div id="chat-container" sse-swap="newMessage" hx-swap="afterbegin" hidden>
+            </div>
+            <div id="instance-language-container" sse-swap="newInstanceLanguage" hx-swap="afterbegin" hidden>
+            </div>
+        </div>
+
+    </div>
+</div>
+<svg width="960" height="600"></svg>
+
+<script type="text/javascript">
+$(document).ready(function(){
+    var nodes = [];
+    var links = [];
+
+    var width = window.innerWidth, height = window.innerHeight;
+    var  svg = d3.select('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .call(d3.zoom()
+        .on('zoom', (event) => { svg.attr('transform', event.transform); }))
+        .append('g');
+
+    var node = svg.append("g")
+        .selectAll("image")
+        .data(nodes)
+        .enter()
+        .append("image")
+        .attr('xlink:href', d => d.img)
+        .attr('width', 50)
+        .attr('height', 50)
+        .attr('x', -25)
+        .attr('y', -25);
+
+    var simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id))
+        .force("charge", d3.forceManyBody())
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+
+
+
+    var label = svg.append("g")
+        .attr("class", "labels")
+        .selectAll("text")
+        .data(nodes)
+        .enter()
+        .append("text")
+        .attr("dx", 12) // Offset the text horizontally from the node
+        .attr("dy", ".35em") // Vertically align the text with the node
+        .text(d => d.id);
+
+               //htmx.logAll();
+
+    htmx.on("htmx:sseBeforeMessage", function (event) {
+        var data = event.detail.data;
+        switch(event.detail.type){
+            case 'newMessage':
+                doD3(data);
+                break;
+            case 'newInstanceLanguage':
+                console.log('newInstanceLanguage');
+                    console.log({data});
+                addNode(data);
+                break;
+            default:
+                console.log('default');
+                break;
+        }
+     });
+          
+     function doD3(graphDataJson) {
+
+         const graphData = JSON.parse(graphDataJson);
+          nodes = graphData.Nodes;
+          links = graphData.Links;
+
+         // const width = window.innerWidth, height = window.innerHeight;
+         const color = d3.scaleOrdinal(d3.schemePastel2);
+
+          // const svg = d3.select('svg')
+          // .attr('width', width)
+          // .attr('height', height)
+          // .call(d3.zoom()
+          // .on('zoom', (event) => { svg.attr('transform', event.transform); }))
+          // .append('g');
+
+          // const simulation = d3.forceSimulation(nodes)
+          //    .force("link", d3.forceLink(links).id(d => d.id))
+          //    .force("charge", d3.forceManyBody())
+          //    .force("center", d3.forceCenter(width / 2, height / 2));
+
+         const link = svg.append("g")
+             .attr("class", "links")
+             .selectAll("line")
+             .data(links)
+             .enter()
+             .append("line")
+             .attr("stroke", "black")
+             .attr("stroke-width",1.5);
+
+         // const node = svg.append("g")
+         //     .selectAll("image")
+         //     .data(nodes)
+         //     .enter()
+         //     .append("image")
+         //     .attr('xlink:href', d => d.img)
+         //     .attr('width', 50)
+         //     .attr('height', 50)
+         //     .attr('x', -25)
+         //     .attr('y', -25)
+
+         // const label = svg.append("g")
+         //     .attr("class", "labels")
+         //     .selectAll("text")
+         //     .data(nodes)
+         //     .enter()
+         //     .append("text")
+         //     .attr("dx", 12) // Offset the text horizontally from the node
+         //     .attr("dy", ".35em") // Vertically align the text with the node
+         //     .text(d => d.id);
+
+
+       simulation.on("tick", () => {
+       link
+           .attr("x1", d => d.source.x)
+           .attr("y1", d => d.source.y)
+           .attr("x2", d => d.target.x)
+           .attr("y2", d => d.target.y);
+
+       node
+           .attr("x", d => d.x-20)
+           .attr("y", d => d.y-20);
+
+       label
+           .attr("x", d => d.x)
+           .attr("y", d => d.y);
+     });
+
+
+
+             node.call(drag(simulation));
+
+
+    }
+
+    // function toolbar do the drag
+    //================================================================================================
+    function drag(simulation) {
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;  }
+            return d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended);
+        }
+
+        // function to adda new node
+        //================================================================================================
+    function addNode(singleNodeJson){
+        //debugger;
+        const newNode  = JSON.parse(singleNodeJson);
+        nodes.push(newNode);
+        node.data(nodes)
+            .enter()
+            .append("image")
+            .attr('xlink:href', d => d.img)
+            .attr('width', 50)
+            .attr('height', 50)
+            .attr('x', -25)
+            .attr('y', -25)
+            .call(drag(simulation));
+
+        label.data(nodes)
+            .enter()
+            .append("text")
+            .attr("dx", 12)
+            .attr("dy", ".35em")
+            .text(d => d.id);
+
+        simulation.on("tick", () => {
+            // link
+            //     .attr("x1", d => d.source.x)
+            //     .attr("y1", d => d.source.y)
+            //     .attr("x2", d => d.target.x)
+            //     .attr("y2", d => d.target.y);
+
+            node
+                .attr("x", d => d.x-20)
+                .attr("y", d => d.y-20);
+
+            label
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+            });
+        simulation.nodes(nodes);
+        simulation.alpha(1).restart();
+    }
+});
+</script>

@@ -24,6 +24,10 @@ public class BskyController : Controller
     private readonly IMastodonService _mastodonService;
     // A thread-safe collection to store connected clients
 
+    // Method to broadcast messages to all connected clients
+
+    private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+
     private static ConcurrentDictionary<string, SseClient> clients = new ConcurrentDictionary<string, SseClient>();
 
     public BskyController(
@@ -71,7 +75,8 @@ public class BskyController : Controller
         }
     }
 
-    // Method to broadcast messages to all connected clients
+
+
     public static async Task BroadcastMessageAsync(string message)
     {
         var data = $"event: newMessage\n";
@@ -82,8 +87,16 @@ public class BskyController : Controller
         {
             try
             {
-                await client.Response.Body.WriteAsync(bytes, 0, bytes.Length);
-                await client.Response.Body.FlushAsync();
+                await _semaphore.WaitAsync();
+                try
+                {
+                    await client.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                    await client.Response.Body.FlushAsync();
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
             }
             catch
             {
@@ -122,7 +135,8 @@ public class BskyController : Controller
 
         await atProtocol.StartSubscribeReposAsync();
 
-        var key = Console.ReadKey();
+        // Delay for 20 seconds
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         await atProtocol.StopSubscriptionAsync();
 
@@ -151,10 +165,40 @@ public class BskyController : Controller
             switch(message.Record.Type)
             {
                 case "app.bsky.feed.like":
+                    Console.WriteLine("Like");
+                    var like = (Like)message.Record;
+                    break;
                 case "app.bsky.feed.repost":
                     break;
                 case "app.bsky.feed.post":
-                    await BroadcastMessageAsync($"<p>{((Post)message.Record).Text}</p>");
+                    var post = (Post)message.Record;
+                    var messageContent = $"<p>{post.Text}</p>";
+
+                    // Check for embed with media
+                    if (post.Embed != null)
+                    {
+                        var embeded = post.Embed;
+                        if(embeded.Type == "app.bsky.embed.images")
+                        {
+                            
+                            Console.WriteLine("Its an image");
+                            var thing = (ImagesEmbed)embeded;
+                            foreach (var image in thing.Images)
+                            {
+                                //Console.WriteLine(embeded.)
+                                Console.WriteLine(message.Commit.Repo.Handler);
+                                Console.WriteLine(message.Commit.Ops[0].Cid);
+                                Console.WriteLine(message.Commit.Ops[0].Path);
+                                Console.WriteLine(image.Image.Ref.Link);
+                                messageContent += $"<img src=\"https://cdn.bsky.app/img/feed_fullsize/plain/{message.Commit.Repo.Handler}/{image.Image.Ref.Link}@jpeg\" />";
+                            }
+
+                            
+                        }
+
+                    }
+
+                    await BroadcastMessageAsync(messageContent);
                     break;
             }
             
