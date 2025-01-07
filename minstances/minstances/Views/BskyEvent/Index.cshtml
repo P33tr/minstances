@@ -3,10 +3,15 @@
 *@
 @{
 }
+<script src="https://d3js.org/d3.v6.min.js"></script>
+
 <h1>Bsky Firehose Refactored to generate events</h1>
 <div>
     <p>
         @Html.ActionLink("Create Timer", "CreateTimer", "BskyEvent", new { }, new { @class = "btn btn-primary" })
+    <p>
+            @Html.ActionLink("Process Likes", "ProcessLikes", "BskyEvent", new { }, new { @class = "btn btn-primary" })
+    </p>
     </p>
 </div>
 
@@ -14,13 +19,199 @@
 <div hx-ext="sse" sse-connect="/bsky-eventsse">
     <div class="row">
         <div class="col-md-10">
-            <div id="chat-container" sse-swap="newMessage" hx-swap="afterbegin">
-                <!-- Statuses messages will be displayed here -->
+            <div id="chat-container" sse-swap="newMessage" hx-swap="afterbegin" hidden>
             </div>
-        </div>
-
-        <div class="col-md-2 right-panel">
-            <h3>Right Hand Panel</h3>
         </div>
     </div>
 </div>
+<svg width="960" height="600"></svg>
+
+<script type="text/javascript">
+
+        var nodes = [];
+        var links = [];
+
+        var width = window.innerWidth, height = window.innerHeight;
+        var  svg = d3.select('svg')
+            .attr('width', width)
+            .attr('height', height)
+            .call(d3.zoom()
+            .on('zoom', (event) => { svg.attr('transform', event.transform); }))
+            .append('g');
+
+        var simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-200))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        var node = svg.append("g")
+            .selectAll("circle")
+            .data(nodes)
+            .enter()
+             .append("circle")
+            .attr("r", 25);
+
+        var link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(links)
+            .enter()
+            .append("line")
+            .attr("stroke", "black")
+            .attr("stroke-width",1.5);
+
+    function updateGraph()
+        {
+            link = link.data(links);
+            link.exit().remove();
+            link = link.enter().append("line")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1.5)
+                .merge(link);
+            node = node.data(nodes);
+            node.exit().remove();
+            node = node.enter().append("circle")
+                .attr("r", 25)
+                .merge(node)
+                .call(d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended));
+           simulation.nodes(nodes);
+           simulation.force("link").links(links);
+           simulation.alpha(1).restart();
+           }
+
+
+        htmx.on("htmx:sseBeforeMessage", function (event) {
+            console.log({event});
+            console.log("SSE message received:", event.detail);
+            var data = event.detail.data;
+            console.log({data});
+            switch(event.detail.type){
+                case 'newNode':
+                    console.log('newMessage');
+                    addNode(data);
+                    break;
+                case 'newLink':
+                    console.log('newMessage');
+                    addLink(data);
+                    break;
+                default:
+                    console.log('default');
+                    break;
+            }
+         });
+
+         function doD3(graphDataJson) {
+         console.log('doD3');
+         let graphData;
+             try{
+                graphData = JSON.parse(graphDataJson);
+            }catch(e){
+                console.log(e);
+                graphData = null;
+            }
+
+
+              nodes = graphData.Nodes;
+              links = graphData.Links;
+
+
+             const link = svg.append("g")
+                 .attr("class", "links")
+                 .selectAll("line")
+                 .data(links)
+                 .enter()
+                 .append("line")
+                 .attr("stroke", "black")
+                 .attr("stroke-width",1.5);
+
+
+               simulation.on("tick", () => {
+               link
+                   .attr("x1", d => d.source.x)
+                   .attr("y1", d => d.source.y)
+                   .attr("x2", d => d.target.x)
+                   .attr("y2", d => d.target.y);
+
+               node
+                   .attr("x", d => d.x-20)
+                   .attr("y", d => d.y-20);
+             });
+
+
+
+            node.call(drag(simulation));
+
+
+        }
+
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+        }
+        function dragged(event) {
+            event.subject.fx = event.x; event.subject.fy = event.y;
+        }
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null; event.subject.fy = null;
+        }
+
+
+
+        // function toolbar do the drag
+        //================================================================================================
+        function drag(simulation) {
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;  }
+                return d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended);
+            }
+
+            // function to add a new node
+            //================================================================================================
+        function addNode(singleNodeJson){
+
+
+            const newNode  = JSON.parse(singleNodeJson);
+            console.log({newNode});
+            if(newNode.group==2){
+                newNode.fill = 'red';
+            }
+            else{
+                newNode.fill = 'blue';
+            }
+            nodes.push(newNode);
+
+            updateGraph();
+        }
+
+        function addLink(singleLinkJson){
+            const newLink  = JSON.parse(singleLinkJson);
+            console.log({newLink});
+            links.push(newLink);
+
+            updateGraph();
+        }
+    simulation.on("tick", () => {
+     node.attr("cx", d => d.x - 25)
+         .attr("cy", d => d.y - 25);
+
+           });
+</script>

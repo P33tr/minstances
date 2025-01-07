@@ -18,7 +18,7 @@ using Google.Protobuf.Collections;
 
 namespace minstances.Controllers;
 
-public class GraphController : Controller
+public partial class GraphController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly IMinstancesRepository _minstancesRepository;
@@ -123,36 +123,6 @@ public class GraphController : Controller
         {
             //Response.OnCompleted(async () => { await DoProcessing(); });
         }
-    }
-
-    public class Node
-    {
-        public string id { get; set; }
-        public int group { get; set; }
-
-        public string img { get; set; }
-    }
-    public class Link
-    {
-        public string source { get; set; }
-        public string target { get; set; }
-    }
-    public class  GraphData
-    {
-        public GraphData()
-        {
-            Nodes = new List<Node>();
-            Links = new List<Link>();
-        }
-
-        public GraphData(List<Node> nodes, List<Link> links)
-        {
-            Nodes = nodes;
-            Links = links;
-        }
-
-        public List<Node> Nodes { get; set; }
-        public List<Link> Links { get; set; }
     }
 
     public async Task<IActionResult> DoProcessing()

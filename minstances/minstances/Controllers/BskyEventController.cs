@@ -69,10 +69,19 @@ public class BskyEventController : Controller
 
 
 
-    public static async Task BroadcastMessageAsync(string message)
+    public static async Task BroadcastMessageAsync(GraphEvent graphEvent)
     {
-        var data = $"event: newMessage\n";
-        data += $"data: {message}\n\n";
+        string data = string.Empty;
+        switch (graphEvent.Type)
+        {
+            case "node":
+                data = $"event: newNode\n";
+                break;
+            case "link":
+                data = $"event: newLink\n";
+                break;
+        }
+        data += $"data: {graphEvent.Message}\n\n";
         var bytes = Encoding.UTF8.GetBytes(data);
 
         foreach (var client in clients.Values)
@@ -114,20 +123,19 @@ public class BskyEventController : Controller
             // Response.OnCompleted(async () => { await DoProcessing(); });
         }
     }
+
+    public async Task<IActionResult> ProcessLikes()
+    {
+        _blueskyService.MessageFromBlueskyEvent += OnMessageFromBlueskyEventAsync;
+       await  _blueskyService.DoProcessing();
+        return NoContent();
+
+    }
     public async Task<IActionResult> IndexAsync()
     {
         try
         {
-            //double interval = 1000;
-            //BlueskyService blueskyService = new BlueskyService();
-            //blueskyService.CreateTimerEvent(interval);
-            //blueskyService.BlueskyEvent += OnBlueskyEventGeneratedAsync;
-
-            //blueskyService.StartTimer();
-            //Console.WriteLine("Timer started");
-
             return View();
-
         }
         finally
         {
@@ -135,103 +143,20 @@ public class BskyEventController : Controller
         }
     }
 
-    private  async void OnBlueskyEventGeneratedAsync(object? sender, EventArgs e)
+    private async void OnBlueskyEventGeneratedAsync(object? sender, EventArgs e)
     {
-        string senderAsString = ((int)sender).ToString();
+        GraphEvent graphEvent = (GraphEvent)sender;
 
-
-        Debug.WriteLine($"Bluesky event generated {senderAsString}");
-
-        await BroadcastMessageAsync($"<p>Bluesky event generated {senderAsString}</p>");
+        await BroadcastMessageAsync(graphEvent);
 
     }
-
-    public async Task<IActionResult> DoProcessing()
+    private  async void OnMessageFromBlueskyEventAsync(object? sender, EventArgs e)
     {
-        var debugLog = new DebugLoggerProvider();
-        var atProtocolBuilder = new ATWebSocketProtocolBuilder();
-            // Defaults to bsky.network.
-            //.WithInstanceUrl(new Uri("https://drasticactions.ninja"))
-            //.WithLogger(debugLog.CreateLogger("FishyFlipDebug"));
-        var atProtocol = atProtocolBuilder.Build();
+        GraphEvent graphEvent = (GraphEvent)sender;
 
-        atProtocol.OnSubscribedRepoMessage += (sender, args) =>
-        {
-            Task.Run(() => HandleMessageAsync(args.Message));
-        };
+        await BroadcastMessageAsync(graphEvent);
 
-        await atProtocol.StartSubscribeReposAsync();
-
-        // Delay for 20 seconds
-        await Task.Delay(TimeSpan.FromSeconds(10));
-
-        await atProtocol.StopSubscriptionAsync();
-
-
-
-        return View();
     }
-
-    async Task HandleMessageAsync(SubscribeRepoMessage message)
-    {
-        if (message.Commit is null)
-        {
-            return;
-        }
-
-        var orgId = message.Commit.Repo;
-
-        if (orgId is null)
-        {
-            return;
-        }
-
-        if (message.Record is not null)
-        {
-            Console.WriteLine($"Record: {message.Record.Type}");
-            switch(message.Record.Type)
-            {
-                case "app.bsky.feed.like":
-                    Console.WriteLine("Like");
-                    var like = (Like)message.Record;
-                    break;
-                case "app.bsky.feed.repost":
-                    break;
-                case "app.bsky.feed.post":
-                    var post = (Post)message.Record;
-                    var messageContent = $"<p>{post.Text}</p>";
-
-                    // Check for embed with media
-                    if (post.Embed != null)
-                    {
-                        var embeded = post.Embed;
-                        if(embeded.Type == "app.bsky.embed.images")
-                        {
-                            
-                            Console.WriteLine("Its an image");
-                            var thing = (ImagesEmbed)embeded;
-                            foreach (var image in thing.Images)
-                            {
-                                //Console.WriteLine(embeded.)
-                                Console.WriteLine(message.Commit.Repo.Handler);
-                                Console.WriteLine(message.Commit.Ops[0].Cid);
-                                Console.WriteLine(message.Commit.Ops[0].Path);
-                                Console.WriteLine(image.Image.Ref.Link);
-                              //  messageContent += $"<img src=\"https://cdn.bsky.app/img/feed_fullsize/plain/{message.Commit.Repo.Handler}/{image.Image.Ref.Link}@jpeg\" />";
-                            }
-
-                            
-                        }
-
-                    }
-
-                    await BroadcastMessageAsync(messageContent);
-                    break;
-            }
-            
-        }
-    }
-
 
     // Method to render the message as HTML
     private Tuple<string, List<string>> RenderMessageHtml(Status status)
