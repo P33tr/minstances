@@ -19,28 +19,15 @@ namespace minstances.Controllers;
 
 public class BskyEventController : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-    private readonly IMinstancesRepository _minstancesRepository;
-    private readonly IInstancesService _instancesService;
-    private readonly IMastodonService _mastodonService;
-    // A thread-safe collection to store connected clients
-
-    // Method to broadcast messages to all connected clients
+    private readonly BlueskyService _blueskyService;
 
     private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
     private static ConcurrentDictionary<string, SseClient> clients = new ConcurrentDictionary<string, SseClient>();
 
-    public BskyEventController(
-        IMinstancesRepository minstancesRepository,
-        IInstancesService instancesService,
-        IMastodonService mastodonService,
-        ILogger<HomeController> logger)
+    public BskyEventController(IBlueskyService blueskyService)
     {
-        _minstancesRepository = minstancesRepository;
-        _instancesService = instancesService;
-        _mastodonService = mastodonService;
-        _logger = logger;
+        _blueskyService = (BlueskyService)blueskyService;
     }
 
     // SSE endpoint method
@@ -68,6 +55,10 @@ public class BskyEventController : Controller
         {
             // Keep the connection open indefinitely
             await Task.Delay(Timeout.Infinite, HttpContext.RequestAborted);
+        }
+        catch(TaskCanceledException)
+        {
+            // Handle the cancellation token
         }
         finally
         {
@@ -105,17 +96,35 @@ public class BskyEventController : Controller
             }
         }
     }
-
-    public async Task<IActionResult> IndexAsync()
+    public async Task<IActionResult> CreateTimer()
     {
         try
         {
             double interval = 1000;
-            BlueskyService blueskyService = new BlueskyService(interval);
-            blueskyService.BlueskyEvent += OnBlueskyEventGeneratedAsync;
+            
+            _blueskyService.CreateTimerEvent(interval);
+            _blueskyService.BlueskyEvent += OnBlueskyEventGeneratedAsync;
 
-            blueskyService.StartTimer();
+            _blueskyService.StartTimer();
             Console.WriteLine("Timer started");
+            return View("Index");
+        }
+        finally
+        {
+            // Response.OnCompleted(async () => { await DoProcessing(); });
+        }
+    }
+    public async Task<IActionResult> IndexAsync()
+    {
+        try
+        {
+            //double interval = 1000;
+            //BlueskyService blueskyService = new BlueskyService();
+            //blueskyService.CreateTimerEvent(interval);
+            //blueskyService.BlueskyEvent += OnBlueskyEventGeneratedAsync;
+
+            //blueskyService.StartTimer();
+            //Console.WriteLine("Timer started");
 
             return View();
 

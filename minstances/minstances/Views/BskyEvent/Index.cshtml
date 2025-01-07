@@ -4,6 +4,12 @@
 @{
 }
 <h1>Bsky Firehose Refactored to generate events</h1>
+<div>
+    <p>
+        @Html.ActionLink("Create Timer", "CreateTimer", "BskyEvent", new { }, new { @class = "btn btn-primary" })
+    </p>
+</div>
+
 
 <div hx-ext="sse" sse-connect="/bsky-eventsse">
     <div class="row">
