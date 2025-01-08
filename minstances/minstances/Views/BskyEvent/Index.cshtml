@@ -19,7 +19,9 @@
 <div hx-ext="sse" sse-connect="/bsky-eventsse">
     <div class="row">
         <div class="col-md-10">
-            <div id="chat-container" sse-swap="newMessage" hx-swap="afterbegin" hidden>
+            <div id="chat-container" sse-swap="newNode" hx-swap="afterbegin" hidden>
+            </div>
+            <div id="chat1-container" sse-swap="newLink" hx-swap="afterbegin" hidden>
             </div>
         </div>
     </div>
@@ -48,11 +50,11 @@
             .selectAll("circle")
             .data(nodes)
             .enter()
-             .append("circle")
-            .attr("r", 25);
+            .append("circle")
+            .attr("r",  d => d.group ==1 ?25:50)
+            .attr("fill", d => d.group ==1 ?"red":"blue");
 
         var link = svg.append("g")
-            .attr("class", "links")
             .selectAll("line")
             .data(links)
             .enter()
@@ -71,7 +73,8 @@
             node = node.data(nodes);
             node.exit().remove();
             node = node.enter().append("circle")
-                .attr("r", 25)
+            .attr("r",  d => d.group ==1 ?25:50)
+                .attr("fill", d => d.group ==1 ?"red":"blue")
                 .merge(node)
                 .call(d3.drag()
                 .on('start', dragstarted)
@@ -85,12 +88,12 @@
 
         htmx.on("htmx:sseBeforeMessage", function (event) {
             console.log({event});
-            console.log("SSE message received:", event.detail);
+           // console.log("SSE message received:", event.detail);
             var data = event.detail.data;
-            console.log({data});
+           // console.log({data});
             switch(event.detail.type){
                 case 'newNode':
-                    console.log('newMessage');
+                    //console.log('newMessage');
                     addNode(data);
                     break;
                 case 'newLink':
@@ -103,49 +106,7 @@
             }
          });
 
-         function doD3(graphDataJson) {
-         console.log('doD3');
-         let graphData;
-             try{
-                graphData = JSON.parse(graphDataJson);
-            }catch(e){
-                console.log(e);
-                graphData = null;
-            }
 
-
-              nodes = graphData.Nodes;
-              links = graphData.Links;
-
-
-             const link = svg.append("g")
-                 .attr("class", "links")
-                 .selectAll("line")
-                 .data(links)
-                 .enter()
-                 .append("line")
-                 .attr("stroke", "black")
-                 .attr("stroke-width",1.5);
-
-
-               simulation.on("tick", () => {
-               link
-                   .attr("x1", d => d.source.x)
-                   .attr("y1", d => d.source.y)
-                   .attr("x2", d => d.target.x)
-                   .attr("y2", d => d.target.y);
-
-               node
-                   .attr("x", d => d.x-20)
-                   .attr("y", d => d.y-20);
-             });
-
-
-
-            node.call(drag(simulation));
-
-
-        }
 
         function dragstarted(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -153,7 +114,8 @@
                 event.subject.fy = event.subject.y;
         }
         function dragged(event) {
-            event.subject.fx = event.x; event.subject.fy = event.y;
+            event.subject.fx = event.x; 
+            event.subject.fy = event.y;
         }
         function dragended(event) {
             if (!event.active) simulation.alphaTarget(0);
@@ -190,13 +152,8 @@
 
 
             const newNode  = JSON.parse(singleNodeJson);
-            console.log({newNode});
-            if(newNode.group==2){
-                newNode.fill = 'red';
-            }
-            else{
-                newNode.fill = 'blue';
-            }
+            //console.log({newNode});
+                newNode.fill = newNode.group==1 ?"red":"blue";
             nodes.push(newNode);
 
             updateGraph();
@@ -210,8 +167,13 @@
             updateGraph();
         }
     simulation.on("tick", () => {
-     node.attr("cx", d => d.x - 25)
-         .attr("cy", d => d.y - 25);
+    link
+           .attr("x1", d => d.source.x)
+           .attr("y1", d => d.source.y)
+           .attr("x2", d => d.target.x)
+           .attr("y2", d => d.target.y);
+     node.attr("cx", d => d.x)
+         .attr("cy", d => d.y);
 
            });
 </script>

@@ -20,6 +20,7 @@ public interface IBlueskyService
 public class BlueskyService : IBlueskyService
 {   
     private System.Timers.Timer _timer;
+    int counter = 0;
 
     // define the event
     public event EventHandler<EventArgs> BlueskyEvent;
@@ -28,7 +29,7 @@ public class BlueskyService : IBlueskyService
 
     private int _counter = 0;
 
-    private List<string> _uriList = new List<string>();
+    private List<LikeProfile> _likeProfiles = new List<LikeProfile>();
 
     public BlueskyService()
     {
@@ -63,6 +64,7 @@ public class BlueskyService : IBlueskyService
 
     public async Task DoProcessing()
     {
+        _likeProfiles = new List<LikeProfile>();
         var debugLog = new DebugLoggerProvider();
         var atProtocolBuilder = new ATWebSocketProtocolBuilder();
         // Defaults to bsky.network.
@@ -72,18 +74,19 @@ public class BlueskyService : IBlueskyService
 
         atProtocol.OnSubscribedRepoMessage += (sender, args) =>
         {
-            Task.Run(() => HandleMessageAsync(args.Message));
+            Task.Run(() => HandleMessageAsync(args.Message, atProtocol));
         };
 
         await atProtocol.StartSubscribeReposAsync();
 
         // Delay for 20 seconds
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        await Task.Delay(TimeSpan.FromSeconds(30));
 
         await atProtocol.StopSubscriptionAsync();
     }
-    async Task HandleMessageAsync(SubscribeRepoMessage message)
+    async Task HandleMessageAsync(SubscribeRepoMessage message, ATWebSocketProtocol atProtocol)
     {
+
         if (message.Commit is null)
         {
             return;
@@ -103,33 +106,59 @@ public class BlueskyService : IBlueskyService
             {
                 case "app.bsky.feed.like":
 
-              
-                    var like = (Like)message.Record;
-                    var likeMessage = $"<p>{like.Subject.Cid}</p>";
-                    likeMessage += $"<p>{like.Subject.Uri}</p>";
-                    likeMessage += $"<p>{like.CreatedAt}</p>";
-                    likeMessage += $"<p>{like.Type}</p>";
-                    Node node = new Node { id = like.Subject.Cid, group = 1 };
-
-                    string jsonString = JsonSerializer.Serialize(node);
-
-                    MessageFromBlueskyEvent?.Invoke(new GraphEvent("node", jsonString), new EventArgs());
-
-                    // only add a new uri if we dont already have it
-                    if (!_uriList.Contains(like.Subject.Uri.ToString()))
+                    counter++;
+                    if(counter > 5000)
                     {
-                        _uriList.Add(like.Subject.Uri.ToString());
-                        Node uriNode = new Node { id = like.Subject.Uri.ToString(), group = 2 };
-                        string jsonStringForUriNode = JsonSerializer.Serialize(uriNode);
-                        MessageFromBlueskyEvent?.Invoke(new GraphEvent("node", jsonStringForUriNode), new EventArgs());
-
-                        Link link = new Link { source = like.Subject.Cid, target = like.Subject.Uri.ToString() };
-                        string jsonStringForLink = JsonSerializer.Serialize(link);
-                        
-                        MessageFromBlueskyEvent?.Invoke(new GraphEvent("link", jsonStringForLink), new EventArgs());
+                        await atProtocol.StopSubscriptionAsync();
                     }
 
-                    break;
+
+                    var like = (Like)message.Record;
+
+                    //LikeProfile likeProfile = _likeProfiles.Find(x => x.Uri == like.Subject.Uri.ToString());
+
+                    var likeProfile = _likeProfiles.FirstOrDefault(x => x.Uri == like.Subject.Uri.ToString());
+                    if (likeProfile == null)
+                    {
+                        if (like.Subject.Uri is null) return;
+
+                        likeProfile = new LikeProfile { Uri = like.Subject.Uri.ToString() };
+                        likeProfile.Likes.Add(new RecordedLike { like = like, Added = false });
+                        _likeProfiles.Add(likeProfile);
+                        return;
+                    }
+                    else
+                    {
+                        likeProfile.Likes.Add(new RecordedLike { like = like, Added = false });
+                    }
+                    if (likeProfile.Likes.Count > 5)
+                    {
+                        if (!likeProfile.Added)
+                        {
+                            likeProfile.Added = true;
+                            Node uriNode = new Node { id = like.Subject.Uri.ToString(), group = 2 };
+                            string jsonStringForUriNode = JsonSerializer.Serialize(uriNode);
+                            MessageFromBlueskyEvent?.Invoke(new GraphEvent("node", jsonStringForUriNode), new EventArgs());
+                        }
+                        foreach (var recordedLike in likeProfile.Likes)
+                        {
+                            if (!recordedLike.Added)
+                            {
+                                recordedLike.Added = true;
+                                Node node = new Node { id = recordedLike.like.Subject.Cid, group = 1 };
+                                string jsonString = JsonSerializer.Serialize(node);
+                                MessageFromBlueskyEvent?.Invoke(new GraphEvent("node", jsonString), new EventArgs());
+
+
+                                Link link = new Link { target = like.Subject.Uri.ToString(), source = like.Subject.Cid };
+                                string jsonStringForLink = JsonSerializer.Serialize(link);
+
+                                MessageFromBlueskyEvent?.Invoke(new GraphEvent("link", jsonStringForLink), new EventArgs());
+                            }
+                        }
+                    }
+
+                        break;
                 case "app.bsky.feed.repost":
                     break;
                 case "app.bsky.feed.post":
