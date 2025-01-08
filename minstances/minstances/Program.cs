@@ -18,6 +18,7 @@ namespace minstances
 
             builder.Services.AddScoped<IInstancesService, InstancesService>();
             builder.Services.AddScoped<IMastodonService, MastodonService>();
+            builder.Services.AddScoped<IBlueskyService, BlueskyService>();
 
             //Configure the ConnectionString and DbContext class
             var connectionString = @"Data Source=C:\minstances_data\minstances.db";
